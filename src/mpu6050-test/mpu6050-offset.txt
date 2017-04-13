@@ -1,0 +1,7 @@
+XAccel -2447
+YAccel   498
+ZAccel  4727
+XGyro     43
+YGyro    -57
+ZGyro    -24
+
