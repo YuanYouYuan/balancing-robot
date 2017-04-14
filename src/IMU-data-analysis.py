@@ -22,6 +22,8 @@ for i in range(3,6):
 plt.legend(loc=1)
 
 gy_mean = np.mean(data[:, 4])
+
+
 print(gy_mean)
 
 
