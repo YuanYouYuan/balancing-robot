@@ -4,12 +4,13 @@
 Motor::Motor()
 {
     
-    pin_EN[0]  = 8;
+    pin_EN[0]  = 10;
     pin_IN1[0] = 2;
     pin_IN2[0] = 3;
-    pin_EN[1]  = 9;
+    pin_EN[1]  = 11;
     pin_IN1[1] = 4;
     pin_IN2[1] = 5;
+    int direction = 1;
     for(int i = 0; i < 2; i++)
     {
         pinMode(pin_IN1[i], OUTPUT);
@@ -29,6 +30,7 @@ Motor::Motor(int pin_EN_A, int pin_IN1_A, int pin_IN2_A, int pin_EN_B, int pin_I
     pin_EN[1]  = pin_EN_B;
     pin_IN1[1] = pin_IN1_B;
     pin_IN2[1] = pin_IN2_B;
+    int direction = 1;
     for(int i = 0; i < 2; i++)
     {
         pinMode(pin_IN1[i], OUTPUT);
@@ -39,6 +41,14 @@ Motor::Motor(int pin_EN_A, int pin_IN1_A, int pin_IN2_A, int pin_EN_B, int pin_I
     stop();
 }
 
+void Motor::set_direction(int _direction)
+{
+    if(_direction >= 0)
+        direction = 1;
+    else
+        direction = -1;
+}
+
 void Motor::move(float _power)
 {
     int power_value = (int)abs(_power);
@@ -47,7 +57,7 @@ void Motor::move(float _power)
     for(int i = 0; i < 2; i++)
     {
         power[i] = _power;
-        if(_power >= 0)
+        if((direction * _power) >= 0)
         {
             analogWrite(pin_IN1[i], power_value);
             analogWrite(pin_IN2[i],           0);

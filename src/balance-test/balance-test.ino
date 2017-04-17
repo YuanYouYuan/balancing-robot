@@ -1,107 +1,103 @@
 #include "I2Cdev.h"
 #include "MPU6050.h"
 #include "Wire.h"
+#include "Motor.h"
 
 //#define DEBUG_ANGLE
-//#define DEBUG_MOTOR
 //#define DEBUG_RAW_DATA
 #define DEBUG_PID
 
 
-#define IN1 2
-#define IN2 3
-#define IN3 4
-#define IN4 5
-
-#define MOTOR_A    0
-#define MOTOR_B    1
-#define MOTOR_STOP 0
-#define MOTOR_RUN  1
-
-
-#define GYRO_SENSITIVITY 131
-
-
-int motor_number = MOTOR_A;
-int motor_action = MOTOR_STOP;
-int power = 0;
-int step = 5;
-
-
-MPU6050 accelgyro;
+MPU6050 IMU;
+Motor motor;
 
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
 
 
+#define GYRO_SENSITIVITY 131
 #define PIN_LED 7
 #define PIN_BTN 6
+#define SAMPLE_NUMBER 5
+#define SMALL_ANGLE 3
+#define DEAD_ANGLE 45
+#define COMPLIMENTARY_FACTOR 0.95
 
-const int angle_list_number = 5;
-const double gy_mean = 235.90;
-const double complimentary_const = 0.95;
+float angle = 0;
+float angle_gyro = 0;
+float angle_acce = 0;
+float angle_offset = 0;
+float angle_list[SAMPLE_NUMBER];
+float dt, time, time_pre;
+
+float gy_offset = 0;
 
 
-
-double gyro_angle = 0;
-double acce_angle = 0;
-double angle_list[angle_list_number];
-double dt, time, time_pre;
-double offset = 0;
-
-double angle_mean = 0;
-double angle_summ = 0;
-double angle_diff = 0;
-double angle_offset = 0;
-
-float kp = 7;
+float kp = 10;
 float ki = 0;
 float kd = 0;
 float pid_gain = 1;
 
 
-void setup() {
-    Wire.begin();
+void setup() 
+{
     Serial.begin(115200);
-
-    //Serial.println("Initializing I2C devices...");
-    accelgyro.initialize();
-
-    //verify connection
+    Wire.begin();
+    IMU.initialize();
     Serial.println("Testing device connections...");
-    Serial.println(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
+    Serial.println(IMU.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
 
-    pinMode(IN1, OUTPUT);
-    pinMode(IN2, OUTPUT);
-    pinMode(IN3, OUTPUT);
-    pinMode(IN4, OUTPUT);
-    pinMode(PIN_BTN, INPUT);
 
     pinMode(PIN_LED, OUTPUT);
-    for(int i = 0; i < angle_list_number; i++)
+    pinMode(PIN_BTN, INPUT);
+
+    for(int i = 0; i < SAMPLE_NUMBER; i++)
         angle_list[i] = 0;
 
+
     time = millis();
+    Serial.println("Press button to set gy offset");
+    long counter = 0;
+    while(!digitalRead(PIN_BTN))
+    {
+        counter++;
+        IMU.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+        gy_offset += gy;
+    }
+    gy_offset /= counter;
+    Serial.println("gy_offset: ") ;
+    Serial.println(gy_offset, 4) ;
 
-    Serial.println("Press button to set angle offset");
-    while(digitalRead(PIN_BTN) == 0)
-        get_angle();
+    delay(500);
 
-    for(int i = 0; i < angle_list_number; i++)
-        angle_summ += angle_list[i];
-    angle_offset = angle_summ / angle_list_number;
-    Serial.print("angle offset: ");
-    Serial.println(angle_offset);
+    angle_offset = get_angle();
+    Serial.println("angle_offset: ") ;
+    Serial.println(angle_offset, 4) ;
 
+    motor.enable();
+    motor.set_direction(-1);
 }
 
-void loop() {
+void loop() 
+{
 
-    tune_PID();
     get_angle();
-    PID_feedback();
-    //if(abs(angle_mean) >= 50)
-    //    stop();
+    tune_PID();
+    PID_feedback(angle);
+    safety();
+}
+
+void safety()
+{
+    if(abs(angle) >= DEAD_ANGLE)
+    {
+        motor.stop();
+        motor.disable();
+        Serial.println("Failed!!!!!!");
+        Serial.println("Press button to restart");
+        while(!digitalRead(PIN_BTN));
+        motor.enable();
+    }
 }
 
 void tune_PID()
@@ -125,27 +121,31 @@ void tune_PID()
         else if(a == 'd')
             kd -= kd_step;
     }
+    Serial.print("kp: ");
+    Serial.print(kp);
+    Serial.print(",ki: ");
+    Serial.print(ki);
+    Serial.print(",kd: ");
+    Serial.print(kd);
+    Serial.print(", ");
 }
 
-double * get_angle()
+float get_angle()
 {
-    double angle;
-    accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-
+    IMU.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
     time_pre = time;
 	time = millis();
 	dt = (time - time_pre)/1000.0;
-    acce_angle = 90.0 + (180/3.141592) * atan2((double)az, (double)ax);
-	gyro_angle += (double)(gy - gy_mean)/GYRO_SENSITIVITY * dt;
+    angle_acce = 90.0 + (180/3.141592) * atan2((float)az, (float)ax);
+	float angle_gyro_var = (float)(gy - gy_offset)/GYRO_SENSITIVITY * dt;
+    if(angle_gyro_var <= -0.008 || angle_gyro_var >= 0.008)
+        angle_gyro += angle_gyro_var;
 
-    angle = acce_angle * complimentary_const + gyro_angle * (1 - complimentary_const);
+    angle = angle_acce * COMPLIMENTARY_FACTOR + angle_gyro * (1 - COMPLIMENTARY_FACTOR);
     angle -= angle_offset;
 
 
-    for(int i = 0; i < angle_list_number -1; i++)
-        angle_list[i] = angle_list[i+1];
-    angle_list[angle_list_number-1] = angle;
 
 #ifdef DEBUG_RAW_DATA
     Serial.print(ax); Serial.print(",");
@@ -157,103 +157,57 @@ double * get_angle()
 #endif
 
 #ifdef DEBUG_ANGLE
-    Serial.print("gyro_angle:\t");
-    Serial.print(gyro_angle);
-    Serial.print("\tacce_angle\t");
-    Serial.println(acce_angle);
+    Serial.print("angle_gyro_var: ");
+    Serial.print(angle_gyro_var, 4);
+    Serial.print(", angle_gyro: ");
+    Serial.print(angle_gyro, 4);
+    Serial.print(", angle_acce: ");
+    Serial.print(angle_acce, 4);
+    Serial.print(", angle: ");
+    Serial.print(angle, 4);
+    Serial.print(", dt:\t");
+    Serial.println(dt, 4);
 #endif
-    return angle_list;
+
+    return angle;
 }
 
-void PID_feedback()
+void PID_feedback(float angle)
 {
-    angle_mean = 0;
-    angle_summ = 0;
-    angle_diff = 0;
+    float angle_mean = 0;
+    float angle_summ = 0;
+    float angle_diff = 0;
 
-    for(int i = 0; i < angle_list_number; i++)
+    for(int i = 0; i < SAMPLE_NUMBER -1; i++)
+        angle_list[i] = angle_list[i+1];
+    angle_list[SAMPLE_NUMBER-1] = angle;
+
+    for(int i = 0; i < SAMPLE_NUMBER; i++)
         angle_summ += angle_list[i];
-    angle_mean = angle_summ / angle_list_number;
+    angle_mean = angle_summ / SAMPLE_NUMBER;
 
-    for(int i = 0; i < angle_list_number-1; i++)
+    for(int i = 0; i < SAMPLE_NUMBER-1; i++)
         angle_diff += angle_list[i+1] - angle_list[i];
-    angle_diff /= (angle_list_number-1);
+    angle_diff /= (SAMPLE_NUMBER-1);
     
-
-    if(abs(angle_mean) <= 3)
-        pid_gain = -0.5;
+    if(abs(angle_mean) <= SMALL_ANGLE)
+        pid_gain = 0.5;
     else
-        pid_gain = -1.0;
-    power = pid_gain * (kp * angle_mean + ki * angle_summ + kd * angle_diff);
-    motor(MOTOR_A, power, MOTOR_RUN);
-    motor(MOTOR_B, power, MOTOR_RUN);
+        pid_gain = 1.0;
+    float power = pid_gain * (kp * angle_mean + ki * angle_summ + kd * angle_diff);
+    motor.move(power);
+
 
 #ifdef DEBUG_PID
-    Serial.print("kp: ");
-    Serial.print(kp);
-    Serial.print(",ki: ");
-    Serial.print(ki);
-    Serial.print(",kd: ");
-    Serial.print(kd);
-    Serial.print("\tangle_mean:\t");
-    Serial.print(angle_mean);
-    Serial.print("\tangle_summ:\t");
-    Serial.print(angle_summ);
-    Serial.print("\tangle_diff:\t");
-    Serial.print(angle_diff);
-    Serial.print("\tpower:\t");
+    Serial.print("angle_mean: ");
+    Serial.print(angle_mean, 4);
+    Serial.print(", angle_summ: ");
+    Serial.print(angle_summ, 4);
+    Serial.print(", angle_diff: ");
+    Serial.print(angle_diff, 4);
+    Serial.print(", power: ");
     Serial.println(power);
 #endif
 
 }
 
-void stop()
-{
-    while(true)
-    {
-        motor(MOTOR_A, 0, MOTOR_STOP);
-        motor(MOTOR_B, 0, MOTOR_STOP);
-        Serial.println("Failed!!!!!!!");
-        delay(1000);
-    }
-    
-}
-
-
-void motor(int motor_number, int power, int motor_action)
-{
-    int INX, INY, tmp;
-    int PWMX = abs(power);
-    int PWMY;
-
-    if(motor_number == MOTOR_A)
-        INX = IN1, INY = IN2;
-    else if(motor_number == MOTOR_B)
-        INX = IN3, INY = IN4;
-    else
-        Serial.println("Unkown motor number");
-
-    if(power < 0)
-        tmp = INX, INX = INY, INY = tmp;
-
-    if(motor_action == MOTOR_STOP)
-        PWMY = PWMX;
-    else if(motor_action == MOTOR_RUN)
-        PWMY = 0;
-    else
-        Serial.println("Unkown motor action");
-        
-    analogWrite(INX, PWMX);
-    analogWrite(INY, PWMY);
-
-#ifdef DEBUG_MOTOR
-    Serial.print("INX: ");
-    Serial.print(INX);
-    Serial.print("\tINY: ");
-    Serial.print(INY);
-    Serial.print("\tPWMX: ");
-    Serial.print(PWMX);
-    Serial.print("\tPWMY: ");
-    Serial.println(PWMY);
-#endif
-}
