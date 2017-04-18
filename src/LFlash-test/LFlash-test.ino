@@ -11,11 +11,15 @@ void setup()
 {
     Serial.begin(115200);
     flash.begin();
-    section_name = "wtf";
-    property_name = "asd";
-    size = sizeof(property_name);
+    section_name = "section_name";
+    property_name = "property_name";
+    char * wtf = "wtf"
+    size = sizeof(wtf);
+    buffer = wtf;
+    Serial.print("size: ");
+    Serial.println(size);
+    Serial.println(section_name);
     Serial.println(flash.write(section_name, property_name, LFLASH_STRING_DATA, buffer, size));
-    
 }
 
 void loop()
