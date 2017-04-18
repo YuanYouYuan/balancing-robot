@@ -1,7 +1,7 @@
 import serial
 port = '/dev/ttyUSB1'
 baudrate = 115200
-file_path = '../data/IMU-rotate-data.csv'
+file_path = '../data/IMU-impact4-data.csv'
 s = serial.Serial(port, baudrate, timeout=1)
 f = open(file_path, 'w')
 while True:
