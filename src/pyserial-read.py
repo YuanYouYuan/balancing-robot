@@ -1,10 +1,15 @@
 import serial
-port = '/dev/ttyUSB0'
+port = '/dev/ttyUSB1'
 baudrate = 115200
-with serial.Serial(port, baudrate, timeout=1) as s:
+file_path = '../data/IMU-rotate-data.csv'
+s = serial.Serial(port, baudrate, timeout=1)
+f = open(file_path, 'w')
+while True:
     try:
-        while True:
-            data = s.readline().decode()
-            print(data)
+        data = s.readline().decode()
+        f.write(data)
+        print(data)
     except KeyboardInterrupt:
-        exit
+        f.close()
+        s.close()
+        break

@@ -15,7 +15,8 @@ int16_t gx, gy, gz;
 bool blinkState = false;
 
 const int angle_list_number = 5;
-const double gy_mean = 235.90;
+//const double gy_mean = 235.90;
+const double gy_mean = 0;
 const double complimentary_const = 0.5;
 
 double gyro_angle = 0;
@@ -48,8 +49,8 @@ void loop() {
     accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
     print_raw_data();
-    Serial.print("acce_angle: ");
-    Serial.println(get_angle(ax, az, gy));
+    //Serial.print("acce_angle: ");
+    //Serial.println(get_angle(ax, az, gy));
     
 
     // read raw accel/gyro measurements from device

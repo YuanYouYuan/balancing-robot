@@ -20,7 +20,7 @@ int16_t gx, gy, gz;
 #define PIN_BTN 6
 #define SAMPLE_NUMBER 5
 #define SMALL_ANGLE 3
-#define DEAD_ANGLE 45
+#define DEAD_ANGLE 60
 #define COMPLIMENTARY_FACTOR 0.95
 
 float angle = 0;
@@ -97,6 +97,7 @@ void safety()
         Serial.println("Press button to restart");
         while(!digitalRead(PIN_BTN));
         motor.enable();
+        angle_gyro = 0;
     }
 }
 
