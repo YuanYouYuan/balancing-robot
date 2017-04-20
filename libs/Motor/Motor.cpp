@@ -4,12 +4,12 @@
 Motor::Motor()
 {
     
-    pin_EN[0]  = 10;
-    pin_IN1[0] = 2;
-    pin_IN2[0] = 3;
-    pin_EN[1]  = 11;
-    pin_IN1[1] = 4;
-    pin_IN2[1] = 5;
+    pin_EN[0]  = 4;
+    pin_IN1[0] = 10;
+    pin_IN2[0] = 11;
+    pin_EN[1]  = 5;
+    pin_IN1[1] = 12;
+    pin_IN2[1] = 13;
     int direction = 1;
     for(int i = 0; i < 2; i++)
     {
