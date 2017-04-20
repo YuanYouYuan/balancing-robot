@@ -9,7 +9,7 @@ with open(file_path) as f:
 data = np.array(data)
 data = data[:1000, :]
 data_name = [r"$a_x$", r"$a_y$", r"$a_z$", r"$g_x$", r"$g_y$", r"$g_z$", r"$\theta_a$", r"$\theta_g$"]
-data_linestyle = ['-', '-', '-', '-', '-', '-', '--', '--']
+data_linestyle = ['-', '-', '-', '-', '-', '-', '--', '--', '--']
 
 plt.subplot(211)
 for i in range(3):
@@ -21,10 +21,10 @@ for i in range(3,6):
     plt.plot(data[:, i], label=data_name[i], linestyle=data_linestyle[i])
 plt.legend(loc=1)
 
-gy_mean = np.mean(data[:, 4])
+#gy_mean = np.mean(data[:, 4])
 
 
-print(gy_mean)
+#print(gy_mean)
 
 
 
