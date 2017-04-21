@@ -3,7 +3,7 @@
 #include "Wire.h"
 #include "Motor.h"
 #include "LFlash.h"
-
+#include "Kalman.h"
 //#define DEBUG_ANGLE
 //#define DEBUG_RAW_DATA
 #define DEBUG_PID
@@ -15,7 +15,7 @@ LFlashClass flash;
 
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
-
+Kalman kalmanX;
 
 #define GYRO_SENSITIVITY 131
 #define PIN_LED 7
@@ -84,7 +84,7 @@ void setup()
     Serial.println(angle_offset, 4) ;
 
     motor.enable();
-    motor.set_direction(1);
+    motor.set_direction(-1);
 
     factor_read();
 }
@@ -195,20 +195,17 @@ void tune_PID()
 float get_angle()
 {
     IMU.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-
+    double gyroYrate=gy/131;
     time_pre = time;
-	time = millis();
-	dt = (time - time_pre)/1000.0;
-    angle_acce = 90.0 + (180/3.141592) * atan2((float)az, (float)ax);
-	float angle_gyro_var = (float)(gy - gy_offset)/GYRO_SENSITIVITY * dt;
-    if(angle_gyro_var <= -0.008 || angle_gyro_var >= 0.008)
-        angle_gyro += angle_gyro_var;
-
-    angle = angle_acce * COMPLIMENTARY_FACTOR + angle_gyro * (1 - COMPLIMENTARY_FACTOR);
-    angle -= angle_offset;
-
-
-
+    time = millis();
+    dt = (time - time_pre)/1000.0;
+    angle_acce = (180/3.141592) * atan2((float)az, (float)ax) -90;
+    kalmanX.setAngle(angle_acce);
+    double kalAngleX = kalmanX.getAngle(angle_acce, gyroYrate, dt);
+    angle=kalAngleX;
+  
+  
+  
 #ifdef DEBUG_RAW_DATA
     Serial.print(ax); Serial.print(",");
     Serial.print(ay); Serial.print(",");
@@ -272,4 +269,3 @@ void PID_feedback(float angle)
 #endif
 
 }
-

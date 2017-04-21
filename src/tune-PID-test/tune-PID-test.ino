@@ -36,7 +36,7 @@ void loop()
         }
         else if(cmd == 'w')
         {
-            ki -= ki_step;
+            ki += ki_step;
             factor_print();
         }
         else if(cmd == 's')
@@ -46,7 +46,7 @@ void loop()
         }
         else if(cmd == 'e')
         {
-            kd -= kd_step;
+            kd += kd_step;
             factor_print();
         }
         else if(cmd == 'd')
