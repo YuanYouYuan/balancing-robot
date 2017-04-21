@@ -23,6 +23,7 @@ Kalman kalmanX;
 #define SAMPLE_NUMBER 5
 #define SMALL_ANGLE 3
 #define DEAD_ANGLE 60
+#define DEAD_COUNT 10
 #define COMPLIMENTARY_FACTOR 0.95
 
 float angle = 0;
@@ -46,6 +47,8 @@ float write_buffer;
 float read_buffer;
 uint32_t write_buffer_size = sizeof(write_buffer);
 uint32_t read_buffer_size = sizeof(read_buffer);
+
+int dead_counter = 0;
 
 void setup() 
 {
@@ -153,6 +156,10 @@ void factor_save()
 void safety()
 {
     if(abs(angle) >= DEAD_ANGLE)
+        dead_counter++;
+    else
+        dead_counter = 0;
+    if(dead_counter > DEAD_COUNT)
     {
         motor.stop();
         motor.disable();
