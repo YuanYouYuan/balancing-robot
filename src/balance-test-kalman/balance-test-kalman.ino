@@ -21,10 +21,19 @@ Kalman kalmanX;
 #define PIN_LED 7
 #define PIN_BTN 6
 #define SAMPLE_NUMBER 5
-#define SMALL_ANGLE 3
-#define DEAD_ANGLE 60
+#define SMALL_ANGLE 10
+#define DEAD_ANGLE 30
+#define MAX_ANGLE 50
 #define DEAD_COUNT 10
 #define COMPLIMENTARY_FACTOR 0.95
+
+#define KP_STEP 0.01
+#define KI_STEP 0.005
+#define KD_STEP 2
+
+#define SMALL_GAIN 1
+#define NORMAL_GAIN 1
+
 
 float angle = 0;
 float angle_gyro = 0;
@@ -35,11 +44,6 @@ float dt, time, time_pre;
 
 float gy_offset = 0;
 
-
-//float kp = 10;
-//float ki = 0;
-//float kd = 0;
-float pid_gain = 1;
 
 float kp, ki, kd;
 
@@ -173,24 +177,21 @@ void safety()
 
 void tune_PID()
 {
-    float kp_step = 0.2;
-    float ki_step = 0.2;
-    float kd_step = 0.2;
     if(Serial.available())
     {
         int cmd = Serial.read();
         if(cmd == 'q')
-            kp += kp_step;
+            kp += KP_STEP;
         else if(cmd == 'a')
-            kp -= kp_step;
+            kp -= KP_STEP;
         else if(cmd == 'w')
-            ki += ki_step;
+            ki += KI_STEP;
         else if(cmd == 's')
-            ki -= ki_step ;
+            ki -= KI_STEP ;
         else if(cmd == 'e')
-            kd += kd_step;
+            kd += KD_STEP;
         else if(cmd == 'd')
-            kd -= kd_step;
+            kd -= KD_STEP;
         else if(cmd == 'x')
             factor_save();
         else if(cmd == 'r')
@@ -207,6 +208,10 @@ float get_angle()
     time = millis();
     dt = (time - time_pre)/1000.0;
     angle_acce = (180/3.141592) * atan2((float)az, (float)ax) -90;
+    if(angle_acce >= MAX_ANGLE)
+        angle_acce = MAX_ANGLE;
+    else if(angle_acce <= -1 *MAX_ANGLE)
+        angle_acce = -1 * MAX_ANGLE;
     kalmanX.setAngle(angle_acce);
     double kalAngleX = kalmanX.getAngle(angle_acce, gyroYrate, dt);
     angle=kalAngleX;
@@ -257,10 +262,10 @@ void PID_feedback(float angle)
     angle_diff /= (SAMPLE_NUMBER-1);
     
     if(abs(angle_mean) <= SMALL_ANGLE)
-        pid_gain = 0.5;
+        float gain = SMALL_GAIN;
     else
-        pid_gain = 1.0;
-    float power = pid_gain * (kp * angle_mean + ki * angle_summ + kd * angle_diff);
+        float gain = NORMAL_GAIN;
+    float power = NORMAL_GAIN * (kp * angle_mean + ki * angle_summ + kd * angle_diff);
     motor.move(power);
 
 
