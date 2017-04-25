@@ -168,8 +168,11 @@ void safety()
         motor.stop();
         motor.disable();
         Serial.println("Failed!!!!!!");
-        Serial.println("Press button to restart");
-        while(!digitalRead(PIN_BTN));
+        Serial.println("Press button or type z to restart");
+        while(!digitalRead(PIN_BTN))
+            if(Serial.available())
+                if(Serial.read() == 'z')
+                    break;
         motor.enable();
         angle_gyro = 0;
     }
