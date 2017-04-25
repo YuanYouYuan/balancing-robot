@@ -1,6 +1,6 @@
 const int chan_num = 3;
 int data[chan_num];
-
+long time;
 void setup()
 {
     Serial.begin(115200);
@@ -13,11 +13,11 @@ void loop()
     {
         data[i] = random(1, 80);
         Serial.print(data[i]);
-        if(i == chan_num - 1)
-            Serial.println();
-        else
-            Serial.print(", ");
+        Serial.print(", ");
     }
+    Serial.print(millis()/1000.0);
+    Serial.println();
+
     if(Serial.available())
     {
         char cmd = Serial.read();
