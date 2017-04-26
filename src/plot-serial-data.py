@@ -16,14 +16,18 @@ class Data_plot:
         self.ser = serial.Serial(port=port, baudrate=baudrate)
         for axis in self.axes:
           #  axis.set_xlim(0, 100)
-            axis.set_ylim(0, 100)
+            axis.set_ylim(-2, 2)
         self.lines  = [axis.plot([], [])[0] for axis in self.axes]
 
     def input_data(self):
         try:
             ser_input = self.ser.readline().decode().rstrip().split(',')
             new_data = [float(s) for s in ser_input[0:-1]]
-            new_data = np.array(new_data)
+            if len(new_data) != self.chan_num:
+                new_data = np.zeros((1, self.chan_num))
+            else:
+                new_data = np.array(new_data)
+            print(len(new_data))
             assert len(new_data) is self.chan_num
             time_stamp = float(ser_input[-1])
         except KeyboardInterrupt:
@@ -36,10 +40,10 @@ class Data_plot:
         for axis in self.axes:
             axis.set_xlim(self.time[0], self.time[-1])
         
-
     def update_data(self, new_data):
         self.data[0:-1, :] = self.data[1:, :]
         self.data[-1,   :] = new_data
+
 
     def update(self, frame_num):
         new_data, time_stamp = self.input_data()

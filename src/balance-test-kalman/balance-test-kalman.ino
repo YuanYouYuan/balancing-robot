@@ -22,16 +22,16 @@ Kalman kalmanX;
 #define PIN_BTN 6
 #define SAMPLE_NUMBER 5
 #define SMALL_ANGLE 10
-#define DEAD_ANGLE 30
+#define DEAD_ANGLE 20
 #define MAX_ANGLE 50
 #define DEAD_COUNT 10
 #define COMPLIMENTARY_FACTOR 0.95
 
-#define KP_STEP 0.01
+#define KP_STEP 0.1
 #define KI_STEP 0.005
-#define KD_STEP 2
+#define KD_STEP 1
 
-#define SMALL_GAIN 1
+#define SMALL_GAIN 0.8
 #define NORMAL_GAIN 1
 
 
@@ -185,16 +185,28 @@ void tune_PID()
         int cmd = Serial.read();
         if(cmd == 'q')
             kp += KP_STEP;
-        else if(cmd == 'a')
+        else if(cmd == 'Q')
             kp -= KP_STEP;
         else if(cmd == 'w')
             ki += KI_STEP;
-        else if(cmd == 's')
+        else if(cmd == 'W')
             ki -= KI_STEP ;
         else if(cmd == 'e')
             kd += KD_STEP;
-        else if(cmd == 'd')
+        else if(cmd == 'E')
             kd -= KD_STEP;
+        else if(cmd == 'a')
+            kp += KP_STEP * 0.1;
+        else if(cmd == 'A')
+            kp -= KP_STEP * 0.1;
+        else if(cmd == 's')
+            ki += KI_STEP * 0.1;
+        else if(cmd == 'S')
+            ki -= KI_STEP * 0.1;
+        else if(cmd == 'd')
+            kd += KD_STEP * 0.1;
+        else if(cmd == 'D')
+            kd -= KD_STEP * 0.1;
         else if(cmd == 'x')
             factor_save();
         else if(cmd == 'r')
