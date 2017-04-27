@@ -3,11 +3,6 @@
 #include "Wire.h"
 #include "Motor.h"
 #include "LFlash.h"
-#include "Kalman.h"
-//#define DEBUG_ANGLE
-//#define DEBUG_RAW_DATA
-//#define DEBUG_PID
-//#define DEBUG_PID_PROP
 
 
 MPU6050 IMU;
@@ -16,7 +11,6 @@ LFlashClass flash;
 
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
-Kalman kal;
 
 #define GYRO_SENSITIVITY 131
 #define PIN_LED 7
@@ -35,21 +29,21 @@ Kalman kal;
 
 
 float angle = 0;
-float angle_gyro = 0;
 float angle_acce = 0;
 float angle_offset = 0;
 float angle_mean = 0;
 float angle_diff = 0;
 float angle_summ = 0;
 float angle_prev = 0;
+float angle_rate = 0;
 float angle_list[SAMPLE_NUMBER];
 float dt, time, time_pre;
 
 float gy_offset = 0;
-float gy_rate = 0;
 
 
 float kp, ki, kd;
+float compl_k = 0.98;
 
 float write_buffer;
 float read_buffer;
@@ -67,23 +61,22 @@ void setup()
     Serial.println("Testing device connections...");
     Serial.println(IMU.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
 
-
     pinMode(PIN_LED, OUTPUT);
     pinMode(PIN_BTN, INPUT);
 
-
-    Serial.print("read gy_offset from flash: ");
-    Serial.println(gy_offset);
-    flash.read("factor", "gy_offset", (uint8_t *)&read_buffer, &read_buffer_size);
-    gy_offset = read_buffer;
-    get_angle();
-    angle_offset = angle;
-    Serial.println(angle_offset);
-
     motor.enable();
     motor.set_direction(-1);
-
     factor_read();
+
+    long t = millis();
+    while((millis() - t) < 2000)
+    {
+        get_angle();
+        angle_offset += angle;
+
+    }
+    Serial.print("angle offset: ");
+    Serial.println(angle_offset);
 }
 
 void loop() 
@@ -124,6 +117,11 @@ void factor_read()
     flash.read("factor", "kd", (uint8_t *)&read_buffer, &read_buffer_size);
     kd = read_buffer;
 
+    Serial.print("read gy_offset from flash: ");
+    Serial.println(gy_offset);
+    flash.read("factor", "gy_offset", (uint8_t *)&read_buffer, &read_buffer_size);
+    gy_offset = read_buffer;
+
     Serial.println("read done");
 }
 
@@ -150,10 +148,6 @@ void factor_save()
 void safety()
 {
     if(abs(angle_mean) >= DEAD_ANGLE)
-        dead_counter++;
-    else
-        dead_counter = 0;
-    if(dead_counter > DEAD_COUNT)
     {
         motor.stop();
         motor.disable();
@@ -165,6 +159,7 @@ void safety()
                     break;
         motor.enable();
         angle_summ = 0;
+        angle = 0;
     }
 }
 
@@ -202,7 +197,7 @@ void tune_PID()
         else if(cmd == 'r')
             factor_read();
     }
-    //factor_print();
+    factor_print();
 }
 
 void get_angle()
@@ -211,12 +206,12 @@ void get_angle()
     time_pre = time;
     time = millis();
     dt = (time - time_pre)/1000.0;
-    angle_acce = (180/3.141592) * atan2((float)az, (float)ax) - 90 - angle_offset;
-    kal.setAngle(angle_acce);
-    gy_rate = (float)(gy-gy_offset)/GYRO_SENSITIVITY;
-    angle = kal.getAngle(angle_acce, gy_rate, dt);
-  
-#ifdef DEBUG_RAW_DATA
+    angle_acce = (180/3.141592) * atan2((float)az, (float)ax) -90;
+    angle_rate = (float)(gy - gy_offset)/GYRO_SENSITIVITY;
+    angle = compl_k * (angle + angle_rate * dt) + (1 - compl_k) * angle_acce;
+    angle -= angle_offset;
+
+#if 0
     Serial.print(ax); Serial.print(",");
     Serial.print(ay); Serial.print(",");
     Serial.print(az); Serial.print(",");
@@ -225,16 +220,15 @@ void get_angle()
     Serial.print(gz); Serial.print("\n");
 #endif
 
-#ifdef DEBUG_ANGLE
-    Serial.print("angle_gyro_var: ");
-    Serial.print(angle_gyro_var, 4);
-    Serial.print(", angle_gyro: ");
-    Serial.print(angle_gyro, 4);
-    Serial.print(", angle_acce: ");
-    Serial.print(angle_acce, 4);
-    Serial.print(", angle: ");
-    Serial.print(angle, 4);
-    Serial.print(", dt:\t");
+#if 0
+    Serial.print(angle_mean, 4);
+    Serial.print(", ");
+    Serial.print(ax);
+    Serial.print(", ");
+    Serial.print(az);
+    Serial.print(", ");
+    Serial.print(gy);
+    Serial.print(", ");
     Serial.println(dt, 4);
 #endif
 }
@@ -258,19 +252,10 @@ void PID_feedback()
     float power = NORMAL_GAIN * (p_term + i_term + d_term);
     motor.move(power);
 
-    Serial.print(angle_mean, 4);
-    Serial.print(", ");
-    Serial.print(ax);
-    Serial.print(", ");
-    Serial.print(az);
-    Serial.print(", ");
-    Serial.print(gy);
-    Serial.print(", ");
-    Serial.println(dt, 4);
 
     
 
-#ifdef DEBUG_PID_PROP
+#if 1
     Serial.print("prop: ");
     Serial.print(100 * p_term / (p_term + i_term + d_term));
     Serial.print(", ");
@@ -280,7 +265,7 @@ void PID_feedback()
     Serial.print(", ");
 #endif
 
-#ifdef DEBUG_PID
+#if 1
     Serial.print("angle_mean: ");
     Serial.print(angle_mean, 2);
     Serial.print(", summ: ");
