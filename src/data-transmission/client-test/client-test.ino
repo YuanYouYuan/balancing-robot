@@ -1,7 +1,7 @@
 #include <LWiFi.h>
 
-char ssid[] = "BRL03_2.4G";
-char pass[] = "biorola33669771";
+char ssid[] = "12345";
+char pass[] = "1111111111";
 
 int status = WL_IDLE_STATUS;
 
