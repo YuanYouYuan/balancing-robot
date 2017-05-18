@@ -1,7 +1,7 @@
 #include <LWiFi.h>
 
 char ssid[] = "12345";
-char pass[] = "1111111111";
+char pass[] = "11111111111";
 
 int status = WL_IDLE_STATUS;
 

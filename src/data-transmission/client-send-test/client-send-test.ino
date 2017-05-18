@@ -1,14 +1,13 @@
 #include <LWiFi.h>
 
-char ssid[] = "BRL03_2.4G";
-char pass[] = "biorola33669771";
+char ssid[] = "12345";
+char pass[] = "1111111111";
 
 int status = WL_IDLE_STATUS;
 
 WiFiClient client;
-IPAddress server(192,168,0,198);
-int port = 5000;
-String readline = "wtf";
+IPAddress server(192,168,0,103);
+int port = 5001;
 
 void setup()
 {
@@ -22,38 +21,34 @@ void setup()
         delay(3000);
     }
     Serial.println("Connected to wifi");
+    print_wifi_stauts();
 
     Serial.println("Connecting to server ");
-
-
-
-
-    float angle_list[100];
-    float angle_rate_list[100];
-    float angle_acce_list[100];
-    float power[100];
-
-    data_header = "s";
-
-    client.write((const uint8_t*)angle_list, sizeof(angle_list));
-    client.write((const uint8_t*)angle_rate_list, sizeof(angle_list));
-    client.write((const uint8_t*)angle_acce_list, sizeof(angle_list));
-    client.write((const uint8_t*)power, sizeof(angle_list));
-
     if(client.connect(server, port))
-    {
-        client.println(readline);
-        client.write((const uint8_t*)data)
-        Serial.println("send to server");
-        delay(10);
-    }
+        Serial.println("Connected");
     else
-        Serial.println("connect failed");
-
-    while(client.available())
-        Serial.write(client.read());
+        Serial.println("connection failed");
 }
 
 void loop()
 {
+    if(Serial.available())
+        if(client.connected())
+            client.write(Serial.read());
+    if(!client.connected())
+    {
+        Serial.println();
+        Serial.println("disconnecting");
+        client.stop();
+        while(1);
+    }
+
+}
+
+void print_wifi_stauts()
+{
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+    Serial.print("IP Adress: ");
+    Serial.println(WiFi.localIP());
 }
