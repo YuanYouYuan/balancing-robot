@@ -74,8 +74,8 @@ def main():
 
 int input_size = %d;
 int num_layer = %d;
-int topo = {%s};
-char act = {%s};
+int topo[] = {%s};
+char act[] = {%s};
 Model m(input_size, num_layer, topo, act);
 
 void setup() {
