@@ -3,7 +3,7 @@
 
 Motor::Motor()
 {
-    
+
     pin_EN[0]  = 4;
     pin_IN1[0] = 10;
     pin_IN2[0] = 11;
@@ -23,7 +23,7 @@ Motor::Motor()
 
 Motor::Motor(int pin_EN_A, int pin_IN1_A, int pin_IN2_A, int pin_EN_B, int pin_IN1_B, int pin_IN2_B)
 {
-    
+
     pin_EN[0]  = pin_EN_A;
     pin_IN1[0] = pin_IN1_A;
     pin_IN2[0] = pin_IN2_A;
@@ -73,8 +73,33 @@ void Motor::move(float _power)
 
 void Motor::move_two(float _power_A, float _power_B)
 {
-    
-}
+    int power_value_A = (int)abs(_power_A);
+    int power_value_B = (int)abs(_power_B);
+    if(power_value_A >= 255)
+        power_value_A = 255;
+    if(power_value_B >= 255)
+        power_value_B = 255;
+    if((direction * _power_A) >= 0)
+    {
+        analogWrite(pin_IN1[0], power_value_A);
+        analogWrite(pin_IN2[0],             0);
+    }
+    else
+    {
+        analogWrite(pin_IN1[0],             0);
+        analogWrite(pin_IN2[0], power_value_A);
+    }
+    if((direction * _power_B) >= 0)
+    {
+        analogWrite(pin_IN1[1], power_value_B);
+        analogWrite(pin_IN2[1],             0);
+    }
+    else
+    {
+        analogWrite(pin_IN1[1],           0);
+        analogWrite(pin_IN2[1], power_value_B);
+    }
+ }
 
 void Motor::stop()
 {

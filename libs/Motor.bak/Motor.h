@@ -12,6 +12,7 @@ class Motor
         Motor();
         Motor(int pin_EN_A, int pin_IN1_A, int pin_IN2_A, int pin_EN_B, int pin_IN1_B, int pin_IN2_B);
         void move(float _power);
+        void move_two(float _power_A, float _power_B);
         void enable();
         void disable();
         void stop();

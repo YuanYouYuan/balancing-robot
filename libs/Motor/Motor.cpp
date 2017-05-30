@@ -3,19 +3,24 @@
 
 Motor::Motor()
 {
+    struct motors m[2];
+    m[0].enable   = true ;
+    m[0].pin_EN   = 4    ;
+    m[0].pin_IN1  = 10   ;
+    m[0].pin_IN2  = 11   ;
 
-    pin_EN[0]  = 4;
-    pin_IN1[0] = 10;
-    pin_IN2[0] = 11;
-    pin_EN[1]  = 5;
-    pin_IN1[1] = 12;
-    pin_IN2[1] = 13;
-    int direction = 1;
+    m[1].enable   = true ;
+    m[1].pin_EN   = 5    ;
+    m[1].pin_IN1  = 12   ;
+    m[1].pin_IN2  = 13   ;
+
+    int direction = 1    ;
+
     for(int i = 0; i < 2; i++)
     {
-        pinMode(pin_IN1[i], OUTPUT);
-        pinMode(pin_IN2[i], OUTPUT);
-        pinMode(pin_EN[i],  OUTPUT);
+        pinMode(m[i].pin_IN1, OUTPUT);
+        pinMode(m[i].pin_IN2, OUTPUT);
+        pinMode(m[i].pin_EN,  OUTPUT);
     }
     disable();
     stop();

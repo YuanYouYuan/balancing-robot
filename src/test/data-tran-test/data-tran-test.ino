@@ -1,18 +1,17 @@
 #include "DataTransimission.h"
 
 #define NUM_CHAN 4
-#define NUM_LIST 1000
+#define NUM_LIST 5000
 int data[NUM_LIST][NUM_CHAN];
-
-DataTransimission DT("12345", "1111111111", IPAddress(192, 168, 0, 101), 5000);
+DataTransimission DT("12345", "1111111111", IPAddress(192, 168, 0, 134), 5000);
 
 void setup()
 {
     Serial.begin(115200);
     while(!Serial);
-    DT.begin();
+    DT.connect_wifi();
     DT.print_wifi_status();
-    DT.connect();
+    DT.connect_server();
 
     for(int i = 0; i < NUM_LIST; i++)
         for(int j = 0; j < NUM_CHAN; j++)
@@ -25,5 +24,3 @@ void loop()
         if(Serial.read() == 'a')
             Serial.println(DT.send_data((const uint8_t*)data, sizeof(data)));
 }
-
-

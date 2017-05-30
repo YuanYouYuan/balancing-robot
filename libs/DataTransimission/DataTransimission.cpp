@@ -4,45 +4,35 @@
 
 DataTransimission::DataTransimission(const char* _ssid, const char* _pass, IPAddress _server, uint16_t _port)
 {
-    WiFiClient client;
-    WiFiClass wifi;
-    int wifi_status = WL_IDLE_STATUS;
-    const char* ssid = _ssid;
-    const char* pass = _pass;
-    IPAddress server = _server;
-    int port = _port;
+    wifi_status = WL_IDLE_STATUS;
+    ssid        = _ssid;
+    pass        = _pass;
+    server      = _server;
+    port        = _port;
 }
 
 size_t DataTransimission::send_data(const uint8_t* data, size_t size)
 {
-    client.stop();
-    Serial.println("Stop client first");
-    client.connect(server, port);
-    Serial.println("Connecting to server");
-    if(client.connected())
-    {
-        Serial.println("Client connected");
-        client.write("d", 1);
-        client.write((const uint8_t*)&size, sizeof(size_t));
-        Serial.println("Client write data size");
+    // if(!client.connected())
+        // connect_server();
+    connect_server();
 
-        const uint8_t* buf;
-        const uint8_t* end = data + size - MAX_BUFFER_SIZE;
-        size_t sent_size = 0;
-        for(buf = data; buf < end; buf += MAX_BUFFER_SIZE)
-            sent_size += client.write(buf, MAX_BUFFER_SIZE);
-        sent_size += client.write(buf, data + size - end);
-        Serial.println("Client write done");
-        return sent_size;
-    }
-    else
-    {
-        Serial.println("connect failed");
-        return 0;
-    }
+    Serial.println("Client write data header");
+    client.write("d", 1);
+    Serial.println("Client write data size");
+    client.write((const uint8_t*)&size, sizeof(size_t));
+
+    const uint8_t* buf;
+    const uint8_t* end = data + size - MAX_BUFFER_SIZE;
+    size_t sent_size = 0;
+    for(buf = data; buf < end; buf += MAX_BUFFER_SIZE)
+        sent_size += client.write(buf, MAX_BUFFER_SIZE);
+    sent_size += client.write(buf, data + size - buf);
+    Serial.println("Client write done");
+    return sent_size;
 }
 
-void DataTransimission::begin()
+void DataTransimission::connect_wifi()
 {
     while (wifi_status != WL_CONNECTED)
     {
@@ -55,25 +45,38 @@ void DataTransimission::begin()
 
 }
 
-void DataTransimission::connect()
+bool DataTransimission::connect_server()
 {
+    Serial.println("Stop client first");
+    client.stop();
+    Serial.print("Connect to ");
+    Serial.print(server);
+    Serial.print(":");
+    Serial.println(port);
     if(client.connect(server, port))
-        Serial.println("Connected to server");
+    {
+        Serial.println("Connect succeed");
+        delay(1000);
+        return true;
+    }
     else
-        Serial.println("Disconnected from server");
+    {
+        Serial.println("Connect failed");
+        return false;
+    }
 }
 
 
 void DataTransimission::print_wifi_status()
 {
     Serial.print("SSID: ");
-    Serial.println(wifi.SSID());
+    Serial.println(WiFi.SSID());
 
-    IPAddress ip = wifi.localIP();
+    IPAddress ip = WiFi.localIP();
     Serial.print("IP Address: ");
     Serial.println(ip);
 
-    long rssi = wifi.RSSI();
+    long rssi = WiFi.RSSI();
     Serial.print("signal strength (RSSI):");
     Serial.print(rssi);
     Serial.println(" dBm");

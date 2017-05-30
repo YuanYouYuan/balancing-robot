@@ -9,18 +9,18 @@ class DataTransimission
 {
     public:
         DataTransimission(const char* ssid, const char* pass, IPAddress server, uint16_t port);
-        void begin();
+        void connect_wifi();
         void print_wifi_status();
-        void connect();
+        bool connect_server();
         size_t send_data(const uint8_t* data, size_t size);
         
     private:
-        IPAddress server;
-        uint16_t port;
-        WiFiClient client; 
         WiFiClass wifi;
         const char* ssid;
         const char* pass;
+        IPAddress server;
+        uint16_t port;
+        WiFiClient client; 
         int wifi_status;
 };
 
