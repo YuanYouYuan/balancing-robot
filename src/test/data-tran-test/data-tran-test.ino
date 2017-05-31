@@ -1,7 +1,7 @@
 #include "DataTransimission.h"
 
 #define NUM_CHAN 4
-#define NUM_LIST 5000
+#define NUM_LIST 1000
 int data[NUM_LIST][NUM_CHAN];
 DataTransimission DT("12345", "1111111111", IPAddress(192, 168, 0, 134), 5000);
 
