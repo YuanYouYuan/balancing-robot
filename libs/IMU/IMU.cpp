@@ -7,12 +7,9 @@
 
 IMU::IMU()
 {
-    for(int i = 0; i < 3; i++)
-    {
-        gyro_offset[i] = 0;
-        raw_acc[i] = 0;
-        raw_gyr[i] = 0;
-    }
+    for(int i = 0; i < STATE_LIST; i++)
+        for(int j = 0; j < 3; j++)
+            state_list[i][j] = 0;
 }
 
 void IMU::begin()
@@ -62,12 +59,54 @@ void IMU::print_raw_data()
     Serial.println();
 }
 
-
-void IMU::set_offset()
+void IMU::get_state()
 {
-    Serial.println("Resetting offset ... ");
+    get_angle();
+
+    state[1] = (angle[1] - state[0]) / dt;
+    state[0] = angle[1];
+    state[2] += angle[1] * dt;
+    smooth_state();
+}
+
+void IMU::smooth_state()
+{
+    for(int i = 0; i < STATE_LIST - 1; i++)
+        for(int j = 0; j < 3; j++)
+            state_list[i+1][j] = state_list[i][j];
+
+    for(int j = 0; j < 3; j++)
+        state_list[0][j] = state[j];
+
+    float temp_state[3] = {0, 0, 0};
+    for(int i = 0; i < STATE_LIST; i++)
+        for(int j = 0; j < 3; j++)
+            temp_state[j] += state_list[i][j] * (STATE_LIST - i);
+
+    for(int j = 0; j < 3; j++)
+    {
+        state[j] = temp_state[j] * smooth_weight;
+        state_list[0][j] = state[j];
+    }
+}
+
+void IMU::print_state()
+{
+    Serial.print("angle: ");
+    Serial.print(state[0], 4);
+    Serial.print("\tangle rate: ");
+    Serial.print(state[1], 4);
+    Serial.print("\tangle summ: ");
+    Serial.print(state[2], 4);
+    Serial.println();
+}
+
+
+void IMU::reset_offset()
+{
+    Serial.print("Resetting offset...");
     for(int i = 0; i < 3; i++)
-        gyro_offset[i] = 0;
+        gyro_offset[i] = 0.0;
     angle_offset = 0;
     float temp_angle_offset = 0;
 
@@ -75,21 +114,30 @@ void IMU::set_offset()
     {
         get_raw_data();
 
-        get_angle_acce(raw_acc);
-        temp_angle_offset += angle_acce;
+        get_acce_angle(raw_acc);
+        temp_angle_offset += acce_angle;
 
         for(int i = 0; i < 3; i++)
             gyro_offset[i] += raw_gyr[i];
     }
+
+    for(int i = 0; i < 3; i++)
+        gyro_offset[i] /= sample_number;
+
+    angle_offset = temp_angle_offset / sample_number;
+
+    Serial.println("done");
+}
+
+void IMU::print_offset()
+{
     Serial.print("Gyro offset:");
     for(int i = 0; i < 3; i++)
     {
-        gyro_offset[i] /= sample_number;
         Serial.print(" ");
         Serial.print(gyro_offset[i]);
     }
     Serial.print("\tAngle offset: ");
-    angle_offset = temp_angle_offset / sample_number;
     Serial.println(angle_offset);
 }
 
@@ -97,41 +145,49 @@ void IMU::get_angle()
 {
     get_raw_data();
 
-    get_angle_gyro(raw_gyr);
-    get_angle_acce(raw_acc);
+    get_gyro_angle(raw_gyr);
+    get_acce_angle(raw_acc);
     
     for(int i = 0; i < 3; i++)
-        angle[i] = angle_gyro[i];
-    angle[1] = compli_factor * angle[1] + (1 - compli_factor) * angle_acce; 
+        angle[i] = gyro_angle[i];
+    angle[1] = compli_factor * angle[1] + (1 - compli_factor) * acce_angle; 
 }
 
-void IMU::get_angle_gyro(float* raw_gyr)
+void IMU::write_offset()
+{
+    Serial.print("Write offset to flash...");
+    flash.write("offset" , "gyro"  , LFLASH_RAW_DATA , (uint8_t*)gyro_offset   , (uint32_t)sizeof(gyro_offset));
+    flash.write("offset" , "angle" , LFLASH_RAW_DATA , (uint8_t*)&angle_offset , (uint32_t)sizeof(angle_offset));
+    Serial.println("done");
+}
+
+void IMU::get_gyro_angle(float* raw_gyr)
 {
     for(int i = 0; i < 3; i++)
     {
         raw_gyr[i] -= gyro_offset[i];
         raw_gyr[i] /= GYRO_SENSITIVITY;
-        angle_gyro[i] += raw_gyr[i] * dt;
+        gyro_angle[i] += raw_gyr[i] * dt;
     }
 }
 
-void IMU::get_angle_acce(float* raw_acc)
+void IMU::get_acce_angle(float* raw_acc)
 {
-    angle_acce = RAD_TO_DEG * atan2(raw_acc[2], raw_acc[0]);
-    angle_acce -= angle_offset;
+    acce_angle = RAD_TO_DEG * atan2(raw_acc[2], raw_acc[0]);
+    acce_angle -= angle_offset;
 }
 
 void IMU::print_angle()
 {
-    Serial.print("Angle_gyro: ");
+    Serial.print("Gyro angle: ");
     for(int i = 0; i < 3; i++)
     {
         Serial.print(" ");
-        Serial.print(angle_gyro[i]);
+        Serial.print(gyro_angle[i]);
     }
 
-    Serial.print("\tAngle_acce:");
-    Serial.print(angle_acce);
+    Serial.print("\tAcce angle: ");
+    Serial.print(acce_angle);
 
     Serial.print("\tAngle: ");
     for(int i = 0; i < 3; i++)
@@ -143,11 +199,13 @@ void IMU::print_angle()
 }
 
 
-void IMU::load_gyro_offset()
+void IMU::load_offset()
 {
-    uint32_t buf_size = sizeof(gyro_offset);
-    if(flash.read("factor", "gyro_offset", (uint8_t *)gyro_offset, &buf_size))
-        Serial.println("Loading gyro offset succeed");
-    else
-        Serial.println("Loading gyro offset failed");
+    Serial.print("Load offset from flash...");
+    uint32_t buf_size;
+    buf_size = sizeof(gyro_offset);
+    flash.read("offset", "gyro", (uint8_t *)gyro_offset, &buf_size);
+    buf_size = sizeof(angle_offset);
+    flash.read("offset", "angle", (uint8_t *)&angle_offset, &buf_size);
+    Serial.println("done");
 }
