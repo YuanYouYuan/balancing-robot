@@ -16,6 +16,7 @@ class IMU
     public:
         IMU();
         void begin();
+        void reset_angle();
 
         void get_raw_data();
         void print_raw_data();
@@ -30,11 +31,12 @@ class IMU
         void get_state();
         void print_state();
 
-        float dt          = 0.01;
-        int orientation   = Z_UPWARD;
-        int sample_number = 10000;
-        float angle[3]    = {0, 0, 0};
-        float state[3]    = {0, 0, 0};
+        float dt            = 0.01;
+        int orientation     = Z_UPWARD;
+        int sample_number   = 10000;
+        float angle[3]      = {0, 0, 0}; // 3-axis angle
+        float state[3]      = {0, 0, 0}; // angle, angle_rate, angle_summ
+        float compli_factor = 0.2;
 
     private:
         LFlashClass flash;
@@ -53,7 +55,6 @@ class IMU
         float acce_angle     = 0.0;
         float state_list[STATE_LIST][3];
         float smooth_weight = 2.0 / (STATE_LIST * (STATE_LIST + 1));
-        float compli_factor  = 0.5;
 };
 
 #endif

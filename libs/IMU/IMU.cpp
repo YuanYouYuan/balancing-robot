@@ -19,6 +19,36 @@ void IMU::begin()
     mpu6050.initialize();
 }
 
+void IMU::reset_angle()
+{
+    for(int i = 0; i < 3; i++)
+    {
+        gyro_angle[i] = 0;
+        angle[i]      = 0;
+        state[i]      = 0;
+    }
+
+    for(int i = 0; i < STATE_LIST; i++)
+        for(int j = 0; j < 3; j++)
+            state_list[i][j] = 0;
+
+    float temp_acce_angle = 0.0;
+    for(int i = 0; i < 1000; i++)
+    {
+        get_raw_data();
+        get_acce_angle(raw_acc);
+        temp_acce_angle += acce_angle;
+    }
+    temp_acce_angle /= 1000.0;
+
+    for(int i = 0; i < STATE_LIST; i++)
+        state_list[i][0] = temp_acce_angle;
+    state[0]      = temp_acce_angle;
+
+    gyro_angle[1] = temp_acce_angle;
+    angle[1]      = temp_acce_angle;
+}
+
 void IMU::get_raw_data()
 {
     mpu6050.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);

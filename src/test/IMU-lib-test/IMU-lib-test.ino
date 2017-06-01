@@ -16,12 +16,13 @@ void setup()
     /* imu.get_raw_data(); */
     /* imu.print_raw_data(); */
 
-    imu.reset_offset();
-    imu.write_offset();
+    /* imu.reset_offset(); */
+    /* imu.write_offset(); */
     /* imu.print_offset(); */
 
     imu.load_offset();
     imu.print_offset();
+    imu.reset_angle();
     delay(2000);
 }
 
