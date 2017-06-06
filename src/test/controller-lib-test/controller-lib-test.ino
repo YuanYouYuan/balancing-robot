@@ -13,7 +13,6 @@ void setup()
 
 void loop()
 {
-    c.tune_PID_factor();
 }
 
 
