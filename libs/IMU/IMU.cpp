@@ -93,9 +93,9 @@ void IMU::get_state()
 {
     get_angle();
 
-    state[1] = (angle[1] - state[0]) / dt;
+    state[2] = (angle[1] - state[0]) / dt;
     state[0] = angle[1];
-    state[2] += angle[1] * dt;
+    state[1] += angle[1] * dt;
     smooth_state();
 }
 
@@ -186,9 +186,11 @@ void IMU::get_angle()
 void IMU::write_offset()
 {
     Serial.print("Write offset to flash...");
-    flash.write("offset" , "gyro"  , LFLASH_RAW_DATA , (uint8_t*)gyro_offset   , (uint32_t)sizeof(gyro_offset));
-    flash.write("offset" , "angle" , LFLASH_RAW_DATA , (uint8_t*)&angle_offset , (uint32_t)sizeof(angle_offset));
-    Serial.println("done");
+    LFlashStatus result1 = flash.write("offset" , "gyro"  , LFLASH_RAW_DATA , 
+            (uint8_t*)gyro_offset   , (uint32_t)sizeof(gyro_offset));
+    LFlashStatus result2 = flash.write("offset" , "angle" , LFLASH_RAW_DATA , 
+            (uint8_t*)&angle_offset , (uint32_t)sizeof(angle_offset));
+    Serial.println((result1 == LFLASH_OK && result2 == LFLASH_OK) ? "done" : "failed");
 }
 
 void IMU::get_gyro_angle(float* raw_gyr)
@@ -234,8 +236,8 @@ void IMU::load_offset()
     Serial.print("Load offset from flash...");
     uint32_t buf_size;
     buf_size = sizeof(gyro_offset);
-    flash.read("offset", "gyro", (uint8_t *)gyro_offset, &buf_size);
+    LFlashStatus result1 = flash.read("offset", "gyro", (uint8_t *)gyro_offset, &buf_size);
     buf_size = sizeof(angle_offset);
-    flash.read("offset", "angle", (uint8_t *)&angle_offset, &buf_size);
-    Serial.println("done");
+    LFlashStatus result2 = flash.read("offset", "angle", (uint8_t *)&angle_offset, &buf_size);
+    Serial.println((result1 == LFLASH_OK && result2 == LFLASH_OK) ? "done" : "failed");
 }

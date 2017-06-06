@@ -13,9 +13,8 @@ DataTransimission::DataTransimission(const char* _ssid, const char* _pass, IPAdd
 
 size_t DataTransimission::send_data(const uint8_t* data, size_t size)
 {
-    // if(!client.connected())
-        // connect_server();
-    connect_server();
+    while(!connect_server())
+        delay(1000);
 
     Serial.println("Client write data header");
     client.write("d", 1);
@@ -47,6 +46,7 @@ void DataTransimission::connect_wifi()
 
 bool DataTransimission::connect_server()
 {
+    Serial.println();
     Serial.println("Stop client first");
     client.stop();
     Serial.print("Connect to ");
@@ -56,7 +56,6 @@ bool DataTransimission::connect_server()
     if(client.connect(server, port))
     {
         Serial.println("Connect succeed");
-        delay(1000);
         return true;
     }
     else

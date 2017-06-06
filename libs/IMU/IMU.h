@@ -35,7 +35,7 @@ class IMU
         int orientation     = Z_UPWARD;
         int sample_number   = 10000;
         float angle[3]      = {0, 0, 0}; // 3-axis angle
-        float state[3]      = {0, 0, 0}; // angle, angle_rate, angle_summ
+        float state[3]      = {0, 0, 0}; // angle, angle_summ, angle_rate
         float compli_factor = 0.2;
 
     private:
