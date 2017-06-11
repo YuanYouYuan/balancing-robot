@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 
+import numpy as np
 from keras.models import load_model
 
 def main():
@@ -14,8 +15,8 @@ def main():
     script_args = arg_parser.parse_args()
 
     model = load_model(script_args.SRC_MODEL)
-    array_train = numpy.load(script_args.TRAIN_DATA)
-    array_label = numpy.load(script_args.LABEL_DATA).reshape([-1, 1])
+    array_train = np.load(script_args.TRAIN_DATA)
+    array_label = np.load(script_args.LABEL_DATA).reshape([-1, 1])
 
     model.fit(array_train, array_label,
               batch_size=32,
