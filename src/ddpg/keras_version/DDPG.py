@@ -430,6 +430,7 @@ def train_episode(env: gym.Env, agent: Agent, memory: ReplayMemory, batch_size: 
             agent.update(transition_batch, gamma, tau)
 
         s = s2
+        env.render()
 
         if done:
             return total_reward
@@ -514,6 +515,7 @@ def main() -> None:
         for episode_i in range(FLAGS.N_EPISODE):
             reward = train_episode(env, agent, memory, FLAGS.BATCH_SIZE, FLAGS.GAMMA, FLAGS.TAU)
             print(episode_i, reward)
+
 
     finally:
         env.close()
