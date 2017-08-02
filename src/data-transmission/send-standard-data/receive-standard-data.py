@@ -2,6 +2,14 @@ import socket
 import numpy as np
 from struct import unpack
 
+def recv(sock, size):
+    buf = b''
+    size_left = size
+    while size_left > 0:
+        receivd = sock.read(size_left)
+        size_left -= len(received)
+        buf += received
+    return buf
 
 def main():
     server_address = ('192.168.0.134', 5000)

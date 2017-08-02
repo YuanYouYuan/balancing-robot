@@ -9,7 +9,7 @@ import numpy as np
 import numpy
 from keras.models import load_model
 from keras.models import Sequential
-from keras.layers import Dense, Dropout
+from keras.layers import Dense
 from keras.optimizers import Adam
 
 def create_model(topology):

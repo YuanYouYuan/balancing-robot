@@ -7,11 +7,13 @@ from keras.models import load_model
 def create_weight_buffer(model):
     buf = b''
     model_arch = json.loads(model.to_json())
+    layer_arch = model_arch['config']['layers']
 
-    for ind, desc in enumerate(model_arch["config"]):
-        weights = model.layers[ind].get_weights()
-        print(weights)
-        buf += weights[0].tobytes() + weights[1].tobytes()
+    for ind, desc in enumerate(layer_arch):
+        if layer_arch[ind]['class_name'] == 'Dense':
+            weights = model.layers[ind].get_weights()
+            # print(weights)
+            buf += weights[0].tobytes() + weights[1].tobytes()
 
     return buf
 
